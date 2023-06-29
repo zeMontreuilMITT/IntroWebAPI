@@ -24,6 +24,7 @@
                 }
             } }
 
+        public HashSet<Role> Roles { get; set; } = new HashSet<Role>();
         public Movie(int id, string title, int year)
         {
             Id = id;

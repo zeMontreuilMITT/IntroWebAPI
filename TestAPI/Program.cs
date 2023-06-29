@@ -44,6 +44,20 @@ app.MapPost("/movies", (Movie movie) =>
     }
 });
 
+app.MapDelete("/movies/{id}", (int id) =>
+{
+    Movie? toDelete = DataContainer.Movies.FirstOrDefault(m => m.Id == id);
+
+    if(toDelete == null)
+    {
+        return Results.NotFound();
+    } else
+    {
+        DataContainer.Movies.Remove(toDelete);
+        return Results.NoContent();
+    }
+});
+
 app.MapPut("/movies/edit/{id}", (int id, string? title, int? year) =>
 {
     // if the movie is found, update values
@@ -93,20 +107,6 @@ app.MapPut("/movies/edit/{id}", (int id, string? title, int? year) =>
     }
 });
 
-app.MapDelete("/movies/{id}", (int id) =>
-{
-    Movie? toDelete = DataContainer.Movies.FirstOrDefault(m => m.Id == id);
-
-    if(toDelete == null)
-    {
-        return Results.NotFound();
-    } else
-    {
-        DataContainer.Movies.Remove(toDelete);
-        return Results.NoContent();
-    }
-});
-
 app.Run();
 
 static class DataContainer
@@ -118,18 +118,59 @@ static class DataContainer
         return s_idCount++;
     }
 
+    // Seed method
     public static HashSet<Movie> Movies = new HashSet<Movie>()
     {
-        new Movie(s_idCount++, "Spider Man 2", 2023),
-        new Movie(s_idCount++, "Transformers", 2023),
-        new Movie(s_idCount++, "Gone with the Wind", 1939),
-        new Movie(s_idCount++, "Scarface", 1987)
+
     };
+
+    public static HashSet<Actor> Actors = new HashSet<Actor>()
+    {
+        new Actor() {Id = s_idCount++, Name = "Al Pacino"}
+    };
+
+    public static HashSet<Role> Roles = new HashSet<Role>()
+    {
+
+    };
+
+
+    public static void CreateRole(Actor actor, Movie movie, string roleName)
+    {
+        // create the new middle object and give it the IDs and Object References to its related objects
+        Role newRole = new Role() { CreditedTitle = roleName, 
+            Actor = actor, 
+            ActorId = actor.Id, 
+            Movie = movie, 
+            MovieId = movie.Id };
+
+        // add references to the "inner" object on the "outer" ones
+        actor.Roles.Add(newRole);
+        movie.Roles.Add(newRole);
+
+        // Add to our "database"
+        Roles.Add(newRole);
+    }
 
 
     static DataContainer()
     {
+        Movie movie1 = new Movie(s_idCount++, "Transformers", 2023);
+        Movie movie2 = new Movie(s_idCount++, "Gone with the Wind", 1939);
+        Movie movie3 = new Movie(s_idCount++, "Scarface", 1987);
+        Movie movie4 = new Movie(s_idCount++, "Serpico", 1973);
 
+        Actor actor1 = new Actor() { Id = s_idCount++, Name = "Al Pacino" };
+
+        Movies.Add(movie1);
+        Movies.Add(movie2);
+        Movies.Add(movie3);
+        Movies.Add(movie4);
+
+        Actors.Add(actor1 );
+
+        CreateRole(actor1, movie3, "Tony Montana");
+        CreateRole(actor1, movie4, "Frank Serpico");
     }
 
 }
