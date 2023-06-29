@@ -32,7 +32,6 @@ app.MapGet("/movies", (int? id) =>
     return Results.Ok(results);
 });
 
-
 app.MapPost("/movies", (Movie movie) =>
 {
     try
@@ -42,6 +41,55 @@ app.MapPost("/movies", (Movie movie) =>
     } catch(Exception ex)
     {
         return Results.BadRequest(ex.Message);
+    }
+});
+
+app.MapPut("/movies/edit/{id}", (int id, string? title, int? year) =>
+{
+    // if the movie is found, update values
+    Movie movie;
+    movie = DataContainer.Movies.FirstOrDefault(m => m.Id == id);
+
+    if(movie == null)
+    {
+        if(title != null && year  != null)
+        {
+            // resource not found, but can create new one
+            try
+            {
+                movie = new Movie(DataContainer.GetNewId(), title, (int)year);
+                DataContainer.Movies.Add(movie);
+                return Results.Created($"/movies/{movie.Id}", movie);
+            } catch(Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+
+        } else
+        {
+            // resource not found and cannot create new resource
+            return Results.BadRequest();
+        }
+    } else
+    {
+        try
+        {
+            if (title != null)
+            {
+                movie.Title = title;
+            }
+
+            if (year != null)
+            {
+                movie.Year = (int)year;
+            }
+            // respond with updated Movie object
+            return Results.Ok(movie);
+        }
+        catch(Exception ex) { 
+            // respond with error in trying to update movie
+            return Results.Problem(ex.Message);
+        }
     }
 });
 
@@ -64,6 +112,11 @@ app.Run();
 static class DataContainer
 {
     private static int s_idCount = 1;
+
+    public static int GetNewId()
+    {
+        return s_idCount++;
+    }
 
     public static HashSet<Movie> Movies = new HashSet<Movie>()
     {

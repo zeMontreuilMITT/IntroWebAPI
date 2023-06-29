@@ -24,11 +24,6 @@
                 }
             } }
 
-        public Movie()
-        {
-
-        }
-
         public Movie(int id, string title, int year)
         {
             Id = id;
