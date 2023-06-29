@@ -36,6 +36,12 @@ app.MapGet("/movies", (int? id) =>
         results = DataContainer.Movies.ToHashSet();
     }
 
+    foreach (Movie m in results)
+    {
+        // find related roles and add them to the movie's list of roles
+        m.Roles.UnionWith(DataContainer.Roles.Where(r => r.MovieId == m.Id));
+    }
+
     return Results.Ok(results);
 });
 
@@ -114,6 +120,43 @@ app.MapPut("/movies/edit/{id}", (int id, string? title, int? year) =>
     }
 });
 
+
+// Roles Endpoint
+app.MapGet("/roles", (int actorId) =>
+{
+    // query the actor that we're looking for roles on
+    try
+    {
+        Actor actor = DataContainer.Actors.First(a => a.Id == actorId);
+        
+        HashSet<Role> roles = DataContainer.Roles.Where(r => r.ActorId == actorId).ToHashSet<Role>();
+
+        return Results.Ok(new { Actor = actor, Roles = roles });
+
+    } catch(Exception ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+app.MapPost("/roles", (int actorId, int movieId, string credit) =>
+{
+    try
+    {
+        Actor actor = DataContainer.Actors.First(a => a.Id == actorId);
+        Movie movie = DataContainer.Movies.First(m => m.Id == movieId);
+
+        Role newRole = DataContainer.CreateRole(actor, movie, credit);
+
+        return Results.Created($"/roles?actorId={actor.Id}", newRole);
+
+    } catch(Exception ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+
 app.Run();
 
 static class DataContainer
@@ -126,37 +169,22 @@ static class DataContainer
     }
 
     // Seed method
-    public static HashSet<Movie> Movies = new HashSet<Movie>()
-    {
+    public static HashSet<Movie> Movies = new HashSet<Movie>();
+    public static HashSet<Actor> Actors = new HashSet<Actor>();
+    public static HashSet<Role> Roles = new HashSet<Role>();
 
-    };
-
-    public static HashSet<Actor> Actors = new HashSet<Actor>()
-    {
-        new Actor() {Id = s_idCount++, Name = "Al Pacino"}
-    };
-
-    public static HashSet<Role> Roles = new HashSet<Role>()
-    {
-
-    };
-
-
-    public static void CreateRole(Actor actor, Movie movie, string roleName)
+    public static Role CreateRole(Actor actor, Movie movie, string roleName)
     {
         // create the new middle object and give it the IDs and Object References to its related objects
         Role newRole = new Role() { CreditedTitle = roleName, 
-            Actor = actor, 
             ActorId = actor.Id, 
-            Movie = movie, 
             MovieId = movie.Id };
 
         // add references to the "inner" object on the "outer" ones
-        actor.Roles.Add(newRole);
-        movie.Roles.Add(newRole);
 
         // Add to our "database"
         Roles.Add(newRole);
+        return newRole;
     }
 
 
@@ -182,4 +210,4 @@ static class DataContainer
 
 }
 
-// Create endpoints that show all of the roles for an Actor, and allows us to add a role for an Actor to a film
+// Create endpoints that show all of the roles for an Actor, and allows us to add a role for an Actor to a Movie
