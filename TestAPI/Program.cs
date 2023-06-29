@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using TestAPI.Models;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
+
+WebApplication app = builder.Build();
+
 
 // Movies Endpoint
 app.MapGet("/movies", (int? id) =>
@@ -175,3 +182,4 @@ static class DataContainer
 
 }
 
+// Create endpoints that show all of the roles for an Actor, and allows us to add a role for an Actor to a film
